@@ -72,7 +72,6 @@ if (function_exists('pcntl_exec')) {
     pcntl_exec($phpUnitBin, $arguments);
 } else {
 
-    print_r($_ENV);
     foreach($_ENV as $k=>$v) {
         echo $k.'='.$v."\n";
         putenv($k . '=' . $v);
