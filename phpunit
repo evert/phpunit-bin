@@ -1,0 +1,87 @@
+#!/usr/bin/env php
+<?php
+
+// Traversing up the directory tree to find composer.json
+$projectDir = getcwd();
+
+while(!file_exists($projectDir . '/composer.json')) {
+
+    $projectDir = dirname($projectDir);
+
+    if ($projectDir === '/') {
+        fwrite(STDERR, "Could not find composer.json in the current directory or any parent\n");
+        exit(1);
+    }
+
+}
+
+$composer = $projectDir . '/composer.json';
+
+// Parsing composer.json and find out if the bin-dir was set.
+$composerConfig = json_decode(file_get_contents($composer), true);
+
+if (isset($composerConfig['config']['bin-dir'])) {
+    $binDir = $composerConfig['config']['bin-dir'];
+} elseif (isset($composerConfig['config']['vendor-dir'])) {
+    $binDir = $composerConfig['config']['vendor-dir'] . '/bin';
+} else {
+    $binDir = 'vendor/bin';
+}
+
+// The composer 'bin' directory
+$phpUnitBin = realpath($projectDir . '/' . $binDir) . '/phpunit';
+
+if (!file_exists($phpUnitBin)) {
+    fwrite(STDERR, "Could not find the phpunit executable at $phpUnitBin\n");
+    exit(1);
+}
+
+
+
+// Next step is to find phpunit.xml.dist or phpunit.xml
+$testDirs = [
+   'phpunit.xml',
+   'phpunit.xml.dist',
+   'test/phpunit.xml',
+   'test/phpunit.xml.dist',
+   'tests/phpunit.xml',
+   'tests/phpunit.xml.dist',
+];
+
+$phpUnitFile = null;
+
+foreach($testDirs as $testDir) {
+
+    if (file_exists($projectDir . '/' . $testDir)) {
+
+        $phpUnitFile = $projectDir . '/' . $testDir;
+        break;
+
+    }
+
+}
+
+// Setting the current directory to where we found phpunit.xml
+if ($phpUnitFile) {
+    chdir(dirname($phpUnitFile));
+}
+
+$arguments = array_slice($argv, 1);
+
+if (function_exists('pcntl_exec')) {
+    pcntl_exec($phpUnitBin, $arguments);
+} else {
+
+    print_r($_ENV);
+    foreach($_ENV as $k=>$v) {
+        echo $k.'='.$v."\n";
+        putenv($k . '=' . $v);
+    }
+
+    // Fallback
+    $arguments = array_map(
+        'escapeshellarg',
+        $arguments
+    );
+    system(escapeshellcmd($phpUnitBin) . ' ' . implode(' ', $arguments));
+}
