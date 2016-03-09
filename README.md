@@ -26,7 +26,7 @@ Installation
     composer global require evert/phpunit-bin
 
 Make sure that after you run that, your global composer `bin` directory is
-in your `$PATH`. This is usually `~/.composer/vendor/bin`.
+in your `$PATH`. This is usually `~/.composer/vendor/bin`, or `~/.config/composer/vendor/bin` 
 
 
 [1]: https://phpunit.de/
