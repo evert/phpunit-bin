@@ -2,7 +2,7 @@
 <?php
 
 // Traversing up the directory tree to find composer.json
-$projectDir = getcwd();
+$workingDir = $projectDir = getcwd();
 
 while(!file_exists($projectDir . '/composer.json')) {
 
@@ -51,6 +51,13 @@ $testDirs = [
 $phpUnitFile = null;
 
 foreach($testDirs as $testDir) {
+
+    if (file_exists($workingDir . '/' . $testDir)) {
+
+        $phpUnitFile = $workingDir . '/' . $testDir;
+        break;
+
+    }
 
     if (file_exists($projectDir . '/' . $testDir)) {
 
