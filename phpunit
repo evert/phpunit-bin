@@ -17,19 +17,15 @@ while(!file_exists($projectDir . '/composer.json')) {
 
 $composer = $projectDir . '/composer.json';
 
-// Parsing composer.json and find out if the bin-dir was set.
+// Parsing composer.json and find vendor-dir
 $composerConfig = json_decode(file_get_contents($composer), true);
-
-if (isset($composerConfig['config']['bin-dir'])) {
-    $binDir = $composerConfig['config']['bin-dir'];
-} elseif (isset($composerConfig['config']['vendor-dir'])) {
-    $binDir = $composerConfig['config']['vendor-dir'] . '/bin';
+if (isset($composerConfig['config']['vendor-dir'])) {
+    $vendorDir = $composerConfig['config']['vendor-dir'];
 } else {
-    $binDir = 'vendor/bin';
+    $vendorDir = 'vendor';
 }
 
-// The composer 'bin' directory
-$phpUnitBin = realpath($projectDir . '/' . $binDir) . '/phpunit';
+$phpUnitBin = realpath($projectDir . '/' . $vendorDir) . '/phpunit/phpunit/phpunit';
 
 if (!file_exists($phpUnitBin)) {
     fwrite(STDERR, "Could not find the phpunit executable at $phpUnitBin\n");
@@ -66,21 +62,11 @@ if ($phpUnitFile) {
     chdir(dirname($phpUnitFile));
 }
 
-$arguments = array_slice($argv, 1);
-
-if (function_exists('pcntl_exec')) {
-    pcntl_exec($phpUnitBin, $arguments);
+require $projectDir.'/'.$vendorDir.'/autoload.php';
+if (class_exists('PHPUnit_TextUI_Command')) {
+    // start PHPUnit directly bypassing the binary as including the binary outputs the shebang line
+    PHPUnit_TextUI_Command::main();
 } else {
-
-    foreach($_ENV as $k=>$v) {
-        echo $k.'='.$v."\n";
-        putenv($k . '=' . $v);
-    }
-
-    // Fallback
-    $arguments = array_map(
-        'escapeshellarg',
-        $arguments
-    );
-    system(escapeshellcmd($phpUnitBin) . ' ' . implode(' ', $arguments));
+    // future-proofing
+    require $phpUnitBin;
 }
